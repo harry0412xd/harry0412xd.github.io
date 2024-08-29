@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Password Generator</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f2f2f2;
+		}
+		h1 {
+			/*text-align: center;*/
+			margin-top: 50px;
+		}
+		#content {
+			margin-left : 25%
+		}
+		form {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-top: 50px;
+			padding: 20px;
+			background-color: white;
+			border-radius: 10px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+			max-width: 500px;
+			width: 100%;
+		}
+		label {
+			display: block;
+			margin-bottom: 10px;
+		}
+		input[type="text"], input[type="password"], select {
+			display: block;
+			margin-bottom: 20px;
+			padding: 10px;
+			border: none;
+			border-radius: 5px;
+			box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+			width: 100%;
+			box-sizing: border-box;
+		}
+		button {
+			background-color: #4CAF50;
+			color: white;
+			padding: 10px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			transition: background-color 0.3s ease;
+			width: 100%;
+			box-sizing: border-box;
+		}
+		button:hover {
+			background-color: #3e8e41;
+		}
+		.password {
+			font-size: 20px;
+			font-weight: bold;
+			color: #4CAF50;
+			margin-top: 20px;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+	<div id="content">
+	<h1>Password Generator</h1>
+	<p>Generate fixed password to fulfil complexity requirements</p>
+	<form>
+		<label for="base_password">Base Password:</label>
+		<input type="password" id="base_password" name="base_password" placeholder="Enter your base password..." required>
+
+		<label for="website">Service name (optional, case insensitive):</label>
+		<input type="text" id="website" name="website" placeholder="Enter the website or service name...">
+		
+		<label for="length">Length:</label>
+		<select id="length" name="length">
+			<option value="8">8</option>
+			<option value="12" selected >12</option>
+			<option value="16">16</option>
+			<option value="20">20</option>
+		</select>
+		
+
+		<input type="checkbox" id="uppercase" name="uppercase" checked>
+		<label for="uppercase">Uppercase</label>
+		<input type="checkbox" id="lowercase" name="lowercase" checked>
+		<label for="lowercase">Lowercase</label>
+		<input type="checkbox" id="numbers" name="numbers" checked>
+		<label for="numbers">Numbers</label>
+		<input type="checkbox" id="special" name="special">
+		<label for="special">Special Characters </label>
+			
+
+		<button type="button" onclick="generatePassword()">Generate Password</button>
+		<br>
+		<input type="text" id="result" name="result" placeholder="Generated Password">
+	</form>
+	</div>
+	
+	<p class="password" id="password"></p>
+	
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+	<script>
+		function generatePassword() {
+			// Get the user inputs
+			var basePassword = document.getElementById("base_password").value;
+			//var name = document.getElementById("name").value;
+			var website = document.getElementById("website").value;
+			var length = parseInt(document.getElementById("length").value);
+			
+			// Generate the hash value
+			var hash = sha256(basePassword+website.toLowerCase());
+
+			// Generate the password based on the hash value and complexity requirements
+			var password = "";
+			const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+			const LOWER = "abcdefghijklmnopqrstuvwxyz";
+			const NUMBER = "0123456789";
+			const SPECIAL = "!@#$%^&*()_+-={}[]|\\:;\"'<>,.?/";
+
+			const complexityPool = [];
+			if (document.getElementById("uppercase").checked) {
+			complexityPool.push("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+			}
+			if (document.getElementById("lowercase").checked) {
+			complexityPool.push("abcdefghijklmnopqrstuvwxyz");
+			}
+			if (document.getElementById("numbers").checked) {
+			complexityPool.push("0123456789");
+			}
+			if (document.getElementById("special").checked) {
+			complexityPool.push("@#$%&*?!");
+			}
+			for (var i = 0; i < length; i++) {
+				password+=complexityPool[i%complexityPool.length][hash[i].charCodeAt(0)%complexityPool[i%complexityPool.length].length]
+			}
+			document.getElementById("result").value=password;
+        }
+
+		document.querySelectorAll("input, select").forEach((el) => {
+			el.addEventListener("change", generatePassword);
+		});
+		function handleInputChange() {
+			generatePassword();
+		}
+
+    </script>
+</body>
