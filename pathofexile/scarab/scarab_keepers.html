@@ -57,75 +57,179 @@
             color: #ffd700; 
         }
         tr:nth-child(even) { background: rgba(255, 255, 255, 0.05); }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #000;
+            color: #fff;
+            text-align: left;
+            border: 2px solid #c9a05f;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 10px rgba(201, 160, 95, 0.5);
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #c9a05f transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip .name { color: #fff; font-weight: bold; }
+        .tooltip .flavor { color: #888; font-style: italic; margin: 4px 0; }
+        .tooltip .effect { color: #fff; margin: 4px 0; }
+        .tooltip .limit { color: #888; font-size: 10px; text-align: right; }
     </style>
 </head>
 <body>
     <div id="content">Loading...</div>
     <script>
-        async function loadScarabData() {
-            const league = 'Keepers';
-            const originalUrl = `https://poe.ninja/poe1/api/economy/exchange/current/overview?league=${encodeURIComponent(league)}&type=Scarab`;
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`;
-            try {
-                const res = await fetch(proxyUrl);
-                const data = await res.json();
-                const lines = data.lines.filter(l => l.primaryValue > 0);
-                const itemsMap = new Map();
-                data.items.forEach(item => itemsMap.set(item.id, item.name));
-                const scarabs = lines.map(l => {
+        const PROXY_URL = 'https://api.allorigins.win/raw?url=';
+        // const PROXY_URL = 'https://corsproxy.io/?url=';
+        const LEAGUE = 'Keepers';
+        const WIKI_URL = encodeURIComponent('https://www.poewiki.net/wiki/List_of_scarabs');
+        const NINJA_URL = `https://poe.ninja/poe1/api/economy/exchange/current/overview?league=${encodeURIComponent(LEAGUE)}&type=Scarab`;
+
+        async function fetchWithProxy(url) {
+            const response = await fetch(`${PROXY_URL}${encodeURIComponent(url)}`);
+            if (!response.ok) throw new Error('Fetch failed');
+            return response.json();
+        }
+
+        function parseScarabData(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const table = doc.querySelector('table.wikitable');
+            if (!table) return {};
+            const rows = table.querySelectorAll('tr');
+            const scarabData = {};
+
+            rows.forEach((row, index) => {
+                if (index === 0) return;
+                const cols = row.querySelectorAll('td');
+                if (cols.length < 4) return;
+                const link = cols[0].querySelector('a');
+                const fullName = link ? link.title : cols[0].textContent.trim();
+                const limit = parseInt(cols[1].textContent.trim(), 10);
+                const effect = cols[2].textContent.trim();
+                const flavor = cols[3].textContent.trim();
+
+                const mechanicMatch = fullName.match(/^(.+?) Scarab/);
+                const mechanic = mechanicMatch ? mechanicMatch[1] : fullName;
+
+                scarabData[fullName] = { mechanic, effect, limit, flavor };
+            });
+            return scarabData;
+        }
+
+        async function getScarabData() {
+            const expireTime = 24 * 60 * 60 * 1000;
+            if (!window.localStorage.scarabData || !window.localStorage.scarabDataTimestamp || (Date.now() - parseInt(window.localStorage.scarabDataTimestamp, 10) > expireTime)) {
+                const response = await fetch(`${PROXY_URL}${WIKI_URL}`);
+                const html = await response.text();
+                const scarabData = parseScarabData(html);
+                window.localStorage.scarabData = JSON.stringify(scarabData);
+                window.localStorage.scarabDataTimestamp = Date.now().toString();
+                return scarabData;
+            } else {
+                return JSON.parse(window.localStorage.scarabData);
+            }
+        }
+
+        function groupScarabs(lines, itemsMap, scarabData) {
+            const groups = {};
+            lines
+                .filter(l => l.primaryValue > 0)
+                .map(l => {
                     const name = itemsMap.get(l.id);
-                    return name && name.includes('Scarab') ? { name, chaosValue: l.primaryValue } : null;
-                }).filter(Boolean);
-                const tierOrder = { 'Basic': 0, 'Rusted': 1, 'Polished': 2, 'Gilded': 3, 'Advanced': 4, 'Winged': 4, 'Horned': 5, 'Bountiful': 6, 'Fracturing': 7 };
-                const groups = {};
-                scarabs.forEach(s => {
+                    return name?.includes('Scarab') ? { name, chaosValue: l.primaryValue } : null;
+                })
+                .filter(Boolean)
+                .forEach(s => {
                     const parts = s.name.split(' ');
-                    let tier = 'Unknown';
                     let mechanic = 'Unknown';
-                    let tierLevel = 999;
                     const scarabIdx = parts.indexOf('Scarab');
                     if (scarabIdx !== -1) {
                         const before = parts.slice(0, scarabIdx);
-                        const after = parts.slice(scarabIdx + 1);
                         if (before.length > 0) {
-                            if (before[0] === 'Rusted') { tier = 'Rusted'; mechanic = before[1]; tierLevel = 1; }
-                            else if (before[0] === 'Polished') { tier = 'Polished'; mechanic = before[1]; tierLevel = 2; }
-                            else if (before[0] === 'Gilded') { tier = 'Gilded'; mechanic = before[1]; tierLevel = 3; }
-                            else if (before[0] === 'Winged') { tier = 'Winged'; mechanic = before[1]; tierLevel = 4; }
-                            else if (before[0] === 'Advanced') { tier = 'Advanced'; mechanic = before[1]; tierLevel = 4; }
-                            else if (before[0] === 'Bountiful') { tier = 'Bountiful'; mechanic = before[1]; tierLevel = 6; }
-                            else if (before[0] === 'Fracturing') { tier = 'Fracturing'; mechanic = before[1]; tierLevel = 7; }
-                            else if (before[0] === 'Horned' && after[0] === 'of') { tier = 'Horned'; mechanic = 'Horned Scarabs'; tierLevel = 5; }
-                            else if (before.length === 1) { tier = 'Basic'; mechanic = before[0]; tierLevel = 0; }
+                            mechanic = before[0] === 'Horned' ? 'Horned Scarabs' : before[0];
                         }
                     }
-                    if (mechanic !== 'Unknown' && tier !== 'Unknown') {
-                        if (!groups[mechanic]) groups[mechanic] = [];
-                        groups[mechanic].push({ ...s, tier, tierLevel: tierOrder[tier] || tierLevel });
+                    if (mechanic !== 'Unknown' && !groups[mechanic]) {
+                        groups[mechanic] = [];
+                    }
+                    if (mechanic !== 'Unknown') {
+                        groups[mechanic].push(s);
                     }
                 });
-                Object.keys(groups).forEach(m => {
-                    groups[m].sort((a, b) => a.tierLevel - b.tierLevel);
-                });
-                const groupList = Object.entries(groups).map(([m, items]) => {
-                    const avg = items.reduce((sum, i) => sum + i.chaosValue, 0) / items.length;
-                    return { mechanic: m, items, avg };
-                }).sort((a, b) => b.avg - a.avg);
+
+            return Object.entries(groups).map(([mechanic, items]) => {
+                const avg = items.reduce((sum, i) => sum + i.chaosValue, 0) / items.length;
+                return { mechanic, items, avg };
+            }).sort((a, b) => b.avg - a.avg);
+        }
+
+        function generateTooltip(data, name) {
+            const effectHtml = data.effect.replace(/\n/g, '<br>');
+            return `<span class="name">${name}</span><br><br><span class="effect">${effectHtml}</span><br><span class="limit">Limit: ${data.limit}</span>`;
+        }
+
+        function renderGroup(group, idx, scarabData) {
+            let html = `<div class="group"><h3>Rank ${idx + 1}: ${group.mechanic} (Avg: ${group.avg.toFixed(1)}c)</h3><table><tr><th>Name</th><th>Price</th></tr>`;
+            group.items.forEach(i => {
+                const data = scarabData[i.name];
+                const tooltipContent = data ? generateTooltip(data, i.name) : '';
+                const tdClass = data ? 'tooltip' : '';
+                const tooltipHtml = data ? `<span class="tooltiptext">${tooltipContent}</span>` : '';
+                html += `<tr><td class="${tdClass}" data-tooltip="${tooltipContent.replace(/"/g, '&quot;')}">${i.name}${tooltipHtml}</td><td>${i.chaosValue.toFixed(1)}c</td></tr>`;
+            });
+            html += '</table></div>';
+            return html;
+        }
+
+        async function loadScarabData() {
+            try {
+                const [scarabData, ninjaData] = await Promise.all([
+                    getScarabData().then(data => ({ scarabData: data })),
+                    fetchWithProxy(NINJA_URL)
+                ]);
+
+                const itemsMap = new Map(ninjaData.items.map(item => [item.id, item.name]));
+                const groupList = groupScarabs(ninjaData.lines, itemsMap, scarabData.scarabData);
+
                 let html = '<h1>Scarab Prices Grouped by Mechanic (Ranked by Avg Price)</h1><div id="groups">';
                 groupList.forEach((g, idx) => {
-                    html += `<div class="group"><h3>Rank ${idx + 1}: ${g.mechanic} (Avg: ${g.avg.toFixed(1)}c)</h3>`;
-                    html += '<table><tr><th>Name</th><th>Price</th></tr>';
-                    g.items.forEach(i => {
-                        html += `<tr><td>${i.name}</td><td>${i.chaosValue.toFixed(1)}c</td></tr>`;
-                    });
-                    html += '</table></div>';
+                    html += renderGroup(g, idx, scarabData.scarabData);
                 });
                 html += '</div>';
                 document.getElementById('content').innerHTML = html;
             } catch (e) {
+                console.error('Error:', e);
                 document.getElementById('content').innerHTML = 'Error loading data.';
             }
         }
+
         loadScarabData();
     </script>
 </body>
