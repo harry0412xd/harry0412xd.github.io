@@ -218,7 +218,7 @@
                 const itemsMap = new Map(ninjaData.items.map(item => [item.id, item.name]));
                 const groupList = groupScarabs(ninjaData.lines, itemsMap, scarabData.scarabData);
 
-                let html = '<h1>Scarab Prices Grouped by Mechanic (Ranked by Avg Price)</h1><div id="groups">';
+                let html = `<h1>${LEAGUE} Scarab Prices (Ranked by Avg Price)</h1><div id="groups">`;
                 groupList.forEach((g, idx) => {
                     html += renderGroup(g, idx, scarabData.scarabData);
                 });
