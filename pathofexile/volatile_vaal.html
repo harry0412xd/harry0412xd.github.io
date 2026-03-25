@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en" class="dark">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Volatile Vaal Orb – Expected Cost</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			body {
+				font-family: "Roboto", system-ui, sans-serif;
+			}
+			.card {
+				background: linear-gradient(145deg, #1e1e2f, #141422);
+				box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+			}
+			.btn-raised {
+				box-shadow:
+					0 4px 6px -1px rgba(0, 0, 0, 0.3),
+					0 2px 4px -1px rgba(0, 0, 0, 0.2);
+			}
+			.btn-raised:hover {
+				box-shadow:
+					0 10px 15px -3px rgba(0, 0, 0, 0.4),
+					0 4px 6px -2px rgba(0, 0, 0, 0.2);
+			}
+			th {
+				background: #2d2d44 !important;
+			}
+		</style>
+	</head>
+	<body class="bg-gray-950 text-gray-100 min-h-screen antialiased">
+		<div class="max-w-6xl mx-auto px-5 py-10">
+			<div class="flex items-center gap-5 mb-10">
+				<div>
+                    
+					<h1
+						class="text-4xl md:text-5xl font-bold tracking-tight text-orange-400"
+					>
+                    <img src="icon/volatile_vaal_orb.png" alt="Volatile Vaal Orb" style="display: inline" />
+						Volatile Vaal Orb
+					</h1>
+				</div>
+			</div>
+
+			<div class="card rounded-2xl p-8 md:p-10">
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+					<div>
+						<label class="block text-sm font-medium text-gray-400 mb-2"
+							>Base Item Cost</label
+						>
+						<input
+							id="baseCost"
+							type="number"
+							value="100"
+							class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+						/>
+						<p class="text-xs text-gray-500 mt-1.5">Chaos / Div / etc.</p>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-400 mb-2"
+							>Volatile Vaal Orb Cost</label
+						>
+						<input
+							id="orbCost"
+							type="number"
+							value="300"
+							class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-400 mb-2"
+							>Modifier Min</label
+						>
+						<input
+							id="minRoll"
+							type="number"
+							value="150"
+							class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+						/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-gray-400 mb-2"
+							>Modifier Max</label
+						>
+						<input
+							id="maxRoll"
+							type="number"
+							value="150"
+							class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+						/>
+					</div>
+                    <div>
+						<label class="block text-sm font-medium text-gray-400 mb-2"
+							>Chaos to Div</label
+						>
+						<input
+							id="c2d"
+							type="number"
+							value="260"
+							class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
+						/>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-6 mb-8">
+					<label class="flex items-center gap-3 cursor-pointer">
+						<input
+							type="checkbox"
+							id="lowMode"
+							class="w-6 h-6 accent-orange-500 bg-gray-800 border-gray-600 rounded"
+						/>
+						<span class="text-gray-300 font-medium"
+							>Calculate for ≤ X% of max (downgrade zone) instead of ≥</span
+						>
+					</label>
+				</div>
+
+				<div class="flex flex-col sm:flex-row gap-4 mb-10">
+					<button
+						onclick="updateTable()"
+						class="flex-1 btn-raised bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-medium text-lg py-5 rounded-xl transition-all duration-200"
+					>
+						Update Table
+					</button>
+					<button
+						onclick="resetDefaults()"
+						class="px-10 py-5 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 font-medium rounded-xl transition-all duration-200"
+					>
+						Reset
+					</button>
+				</div>
+
+				<div
+					class="overflow-x-auto rounded-xl border border-gray-800 max-h-[65vh] overflow-y-auto"
+				>
+					<table class="w-full text-left border-collapse">
+						<thead class="sticky top-0 z-10">
+							<tr
+								class="bg-gray-900/90 backdrop-blur-sm border-b border-gray-800"
+							>
+								<th
+									class="p-5 text-sm font-semibold text-gray-300 uppercase tracking-wider"
+								>
+									Volatile %
+								</th>
+								<th
+									class="p-5 text-sm font-semibold text-gray-300 uppercase tracking-wider"
+								>
+									Mod Value
+								</th>
+								<th
+									class="p-5 text-sm font-semibold text-gray-300 uppercase tracking-wider"
+								>
+									Success =
+								</th>
+                                <th
+									class="p-5 text-sm font-semibold text-gray-300 uppercase tracking-wider"
+								>
+									Success <span id="than">>=</span> 
+								</th>
+								<th
+									class="p-5 text-sm font-semibold text-gray-300 uppercase tracking-wider"
+								>
+									Expected Cost
+								</th>
+							</tr>
+						</thead>
+						<tbody id="tableBody" class="divide-y divide-gray-800 text-lg">
+							<!-- JS fills here -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div class="mt-10 text-sm text-gray-500 text-center max-w-3xl mx-auto">
+				<p class="mb-3">
+					50% destroy chance • Survive → divine reroll + independent 0.78–1.22×
+					multiplier (0.01 steps) • round nearest
+				</p>
+				<p class="mb-2">
+					Toggle changes target from "good roll ≥ %" to "low roll ≤ %"
+				</p>
+				<p class="text-xs mt-4">
+					Save as .html • offline use • good luck not bricking it
+				</p>
+			</div>
+		</div>
+
+		<script>
+
+			function calculate(minRoll, maxRoll, baseCost, orbCost) {
+				const min = Math.floor(minRoll);
+				const max = Math.floor(maxRoll);
+				if (min > max) return null;
+
+                let rows = {};
+                for (let v=min; v<=max; v++) {
+                    for (let k=78; k<=122; k++) {
+                        const val = Math.floor(v * k /100);
+                        console.log(k, v, val);
+                        rows[val] = {
+                            "min": Math.min(k, rows[val]?.min ?? k), 
+                            "max": Math.max(k, rows[val]?.max ?? k),
+                            "count": (rows[val]?.count ?? 0) + 1
+                        }
+                    }
+                }
+ 
+                //calc accumulative
+                const asc = !document.getElementById("lowMode").checked;
+                if (!asc) {
+                    document.getElementById("than").textContent = "<=";
+                    rows = Object.entries(rows).sort((a, b) => a[0] - b[0]);
+                } else {
+                    document.getElementById("than").textContent = ">=";
+                    rows = Object.entries(rows).sort((a, b) => b[0] - a[0]);
+                }
+
+                console.log(rows);
+                let accumulative = 0;
+                for (let i=0; i<rows.length; i++) {
+
+                    accumulative += rows[i][1].count;
+                    rows[i][1].accu = accumulative;
+                }
+                
+                const c2d = parseFloat(document.getElementById("c2d").value) || 260;
+                for (let i=0; i<rows.length; i++) {
+                    const [mod_value, range] = rows[i];
+                    const probExact = range.count / accumulative * 0.5;
+                    const probGreater = range.accu / accumulative * 0.5;
+                    const tr = document.createElement("tr");
+                    const min = range.min;
+                    const max = range.max;
+                    const vDisplay = min == max ? `${min}` : `${min} - ${max}`
+                    const expectedCostChaos = probGreater > 0 ? (1 / probGreater * (parseFloat(baseCost) + parseFloat(orbCost))) : 0;
+                    const expectedCostDivine = expectedCostChaos / 260
+                    tr.className = "hover:bg-gray-800/60 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-5">${vDisplay}%</td>
+                        <td class="p-5 font-medium">${mod_value}</td>
+                        <td class="p-5 text-emerald-400">${(probExact * 100).toFixed(2)}%</td>
+                        <td class="p-5 text-emerald-400">${(probGreater * 100).toFixed(2)}%</td>
+                        <td class="p-5 font-medium">
+                            ${expectedCostChaos} <img src="icon/chaos_orb.png" alt="Chaos Orb" style="display: inline; height: 1em;" />
+                            / 
+                            ${expectedCostDivine.toFixed(2)} <img src="icon/divine_orb.png" alt="Divine Orb" style="display: inline; height: 1em;" />
+                        </td>
+                    `;
+                    document.getElementById("tableBody").appendChild(tr);
+
+                }
+
+			}
+            
+
+			function updateTable() {
+				const baseCost =
+					parseFloat(document.getElementById("baseCost").value) || 0;
+				const orbCost =
+					parseFloat(document.getElementById("orbCost").value) || 0;
+				const minRoll =
+					parseFloat(document.getElementById("minRoll").value) || 0;
+				const maxRoll =
+					parseFloat(document.getElementById("maxRoll").value) || 0;
+				const isLowMode = document.getElementById("lowMode").checked;
+
+				const tbody = document.getElementById("tableBody");
+				tbody.innerHTML = "";
+
+				if (minRoll > maxRoll) {
+					tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-red-400 text-xl">Min cannot exceed max</td></tr>`;
+					return;
+				}
+
+				if (minRoll <= 0 || maxRoll <= 0) {
+					tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-red-400 text-xl">Positive values only</td></tr>`;
+					return;
+				}
+                calculate(minRoll, maxRoll, baseCost, orbCost);
+
+			}
+
+			function resetDefaults() {
+				document.getElementById("baseCost").value = 100;
+				document.getElementById("orbCost").value = 300;
+				document.getElementById("minRoll").value = 150;
+				document.getElementById("maxRoll").value = 150;
+				document.getElementById("lowMode").checked = false;
+				updateTable();
+			}
+
+			// Live updates
+			document.querySelectorAll("input").forEach((el) => {
+				el.addEventListener("input", updateTable);
+				if (el.type === "checkbox") el.addEventListener("change", updateTable);
+			});
+
+			window.addEventListener("load", () => setTimeout(updateTable, 150));
+		</script>
+	</body>
+</html>
